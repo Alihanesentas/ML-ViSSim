@@ -1,0 +1,42 @@
+/ML-ViSSim/  (Ana GitHub Repon)
+   |
+   +-- /UnityProject/     <-- Unity-Frontend  (Tüm C# kodları burada)
+   |     |
+   |     +-- /Assets/
+   |           |
+   |           +-- /Scripts/  <-- ODD'de  planladığımız C# Sınıfları 
+   |                 |
+   |                 +-- /Core/
+   |                 |    +-- SimulationManager.cs  (Play/Pause, Speed, Stop mantığını yönetir)
+   |                 |
+   |                 +-- /UI/
+   |                 |    +-- ConfigurationPanel.cs (Model/Algorithm/Hyperparam seçimlerini yönetir)
+   |                 |    +-- DataLogManager.cs     (Log tablosuna satır ekler - `DataLogManager`)
+   |                 |    +-- TabManager.cs         (Sayfa 2, 3 oluşturmayı (`[ + ]`) yönetir)
+   |                 |
+   |                 +-- /Visualization/
+   |                 |    +-- GraphRenderer.cs      ("Akış A" - Ağır yük. Sabit Mesh'i çizer)
+   |                 |    +-- PointController.cs    ("Akış B" - Hafif yük. Hareketli noktayı günceller)
+   |                 |
+   |                 +-- /Networking/
+   |                      +-- APIClient.cs          (Python  ile konuşan tek sınıf )
+   |                      +-- (DTOs) DataStructs.cs (Python'dan  gelen JSON verilerini C# sınıfı olarak tutar)
+   |
+   +-- /PythonBackend/  <-- Python-Backend  (Tüm Python  kodları burada)
+         |
+         +-- app.py         <-- Flask/FastAPI sunucun. Tüm API endpoint'leri burada tanımlanır
+         |                       (örn: @app.route("/get_cost_surface"))
+         |
+         +-- /services/     <-- (Burası senin "ne iş yapacağını" sorduğun yer)
+         |    |
+         |    +-- data_service.py       (import_data ve generate_data mantığını içerir)
+         |    +-- cost_surface_service.py ("Akış A" - Ağır yük. 10.000 noktalık grid'i hesaplar)
+         |    +-- simulation_service.py ("Akış B" - Hafif yük. `calculate_next_step` mantığını içerir)
+         |
+         +-- /models/       <-- (Burası da sorduğun yer)
+         |    |
+         |    +-- base_model.py         (Tüm modellerin uyması gereken soyut sınıf)
+         |    +-- linear_regression.py  (İçinde `calculate_cost()` ve `calculate_gradient()` metotları olan sınıf)
+         |    +-- (Gelecekte) polynomial_regression.py
+         |
+         +-- requirements.txt (flask, numpy, scikit-learn)
