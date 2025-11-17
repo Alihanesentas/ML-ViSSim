@@ -30,8 +30,8 @@ class LinearRegression(BaseModel):
         # 5. new_w1 = w[1] - learning_rate * dW1
         # 6. new_cost = self.calculate_cost(data, [new_w0, new_w1])
         # 7. return ([new_w0, new_w1], new_cost)
-        
+            
         print("Python: Calculating Gradient...")
         new_w = [w[0] * 0.9, w[1] * 0.9] # Placeholder (mock) logic
-        new_cost = 4.5 # Placeholder (mock) value
+        new_cost = 4.5 # Placeholder (mock) valuew
         return (new_w, new_cost)

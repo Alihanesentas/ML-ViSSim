@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, request
-# BAK: Import'lar artık daha temiz!
 from services import CostSurfaceService, SimulationService
 from models import LinearRegression 
 import numpy as np
+
 
 app = Flask(__name__)
 
@@ -24,9 +24,10 @@ def api_get_cost_surface():
     
     model = models_repo[model_name]
     data = data_store[data_id]
-    
     surface_data = cost_service.get_surface(model, data)
     return jsonify(surface_data)
+
+
 
 @app.route("/calculate_next_step", methods=['POST'])
 def api_calculate_next_step():

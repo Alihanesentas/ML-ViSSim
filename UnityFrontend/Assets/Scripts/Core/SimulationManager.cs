@@ -70,6 +70,7 @@ public class SimulationManager : MonoBehaviour
             algorithm = this.algo,
             learning_rate = this.lr
         };
+        
 
         // 2. Call the API
         StepDataResponse response = await apiClient.CalculateNextStepAsync(requestData);

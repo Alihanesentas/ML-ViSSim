@@ -9,6 +9,7 @@ public class LogEntry : MonoBehaviour
     public TextMeshProUGUI iterationText;
     public TextMeshProUGUI variablesText;
     public TextMeshProUGUI lossText;
+    
     // TODO: Gerekirse diğer parametreler için Text alanları ekle
 
     /// <summary>
