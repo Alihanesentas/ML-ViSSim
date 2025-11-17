@@ -1,11 +1,11 @@
 using UnityEngine;
-using UnityEngine.UI; // For Sliders, Buttons
+using UnityEngine.UI;
+using TMPro; // For TMP_Dropdown
 
-// This is the "Orchestra Conductor".
-// It knows about all other components and connects them.
+// The "Orchestra Conductor". Connects UI to logic.
 public class UIManager : MonoBehaviour
 {
-    [Header("Component Links")]
+    [Header("Component Links (Drag from Hierarchy)")]
     public APIClient apiClient;
     public GraphRenderer graphRenderer;
     public PointController pointController;
@@ -17,12 +17,18 @@ public class UIManager : MonoBehaviour
     public Button playButton;
     public Button pauseButton;
     public Button stepButton;
-    // TODO: Add sliders for LR, Speed, etc.
+    
+    // --- TODO: Add these UI elements ---
+    // public TMP_Dropdown modelDropdown;
+    // public TMP_Dropdown algorithmDropdown;
+    // public Slider lrSlider;
+    // public Slider speedSlider;
+    // public Button importDataButton;
+    // public Button generateDataButton;
 
     void Start()
     {
         // --- Setup Dependencies ---
-        // Give the SimulationManager the components it needs to control
         simManager.apiClient = this.apiClient;
         simManager.pointController = this.pointController;
         simManager.dataLogManager = this.dataLogManager;
@@ -31,15 +37,25 @@ public class UIManager : MonoBehaviour
         generateSurfaceButton.onClick.AddListener(OnGenerateSurfaceClicked);
         playButton.onClick.AddListener(simManager.PlaySimulation);
         pauseButton.onClick.AddListener(simManager.PauseSimulation);
-        stepButton.onClick.AddListener(() => simManager.StepOnce()); // Lambda for async Task
+        stepButton.onClick.AddListener(() => simManager.StepOnce());
+        
+        // TODO: Connect other UI elements
+        // lrSlider.onValueChanged.AddListener(OnLearningRateChanged);
+        // algorithmDropdown.onValueChanged.AddListener(OnAlgorithmChanged);
     }
 
-    // Called when "Generate Surface" button is clicked
     public async void OnGenerateSurfaceClicked()
     {
         // TODO: Get selected model and data from UI dropdowns
-        string selectedModel = "linear_regression";
-        string selectedData = "default_data";
+        string selectedModel = "linear_regression"; // (Get from modelDropdown)
+        string selectedData = "default_data";       // (Get from dataDropdown)
+        
+        // Tell SimManager the config
+        simManager.model = selectedModel;
+        simManager.data_id = selectedData;
+        
+        // Clear old logs
+        dataLogManager.ClearLog();
 
         // 1. Call the "Heavy Load" API
         SurfaceDataResponse surfaceData = await apiClient.GetCostSurfaceAsync(selectedModel, selectedData);
@@ -51,7 +67,19 @@ public class UIManager : MonoBehaviour
         }
     }
     
-    // TODO: Add functions to read sliders
-    // public void OnLearningRateChanged(float value) { ... }
-    // public void OnSpeedChanged(float value) { simManager.SetSpeed(value); }
+    public void OnLearningRateChanged(float value)
+    {
+        // Read value from LR slider and update the SimManager's config
+        simManager.hyperparameters.learning_rate = value;
+    }
+    
+    public void OnAlgorithmChanged(int index)
+    {
+        // Read value from Algorithm dropdown
+        // string selectedAlgo = algorithmDropdown.options[index].text;
+        // simManager.algorithm = selectedAlgo;
+    }
+    
+    // TODO: Add OnImportDataClicked()
+    // TODO: Add OnGenerateDataClicked()
 }

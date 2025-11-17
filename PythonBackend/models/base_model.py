@@ -1,5 +1,5 @@
 # This is the "contract" or abstract class.
-# Every new model we add (Polynomial, Ridge, etc.) MUST follow this structure.
+# All models (LinearRegression, PolynomialRegression, etc.) MUST implement this.
 from abc import ABC, abstractmethod
 
 class BaseModel(ABC):
@@ -7,18 +7,16 @@ class BaseModel(ABC):
     @abstractmethod
     def calculate_cost(self, data, w):
         """
-        Calculates the total cost (e.g., MSE) for the given dataset 'data'
-        using the provided weight vector 'w' (e.g., [w0, w1]).
-        
-        This is used by the CostSurfaceService to draw the "bowl".
+        Calculates the cost (e.g., MSE) for a given weight vector 'w'.
+        This is a "stateless" method, used by the CostSurfaceService.
         """
         pass
 
     @abstractmethod
-    def calculate_gradient(self, data, w, learning_rate):
+    def calculate_gradient_at_point(self, data, w):
         """
-        Calculates a single step of Gradient Descent.
-        Takes the current weights 'w' and returns the *new* weights
-        and the *new* cost after taking one step.
+        Calculates the *gradient* (partial derivatives) at point 'w'.
+        It does *not* apply the learning rate or calculate the next step.
+        It just returns the "slope" of the terrain at that point.
         """
         pass

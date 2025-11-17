@@ -1,10 +1,9 @@
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Threading.Tasks;
-using System.Text; // For POST request
+using System.Text;
 
-[cite_start]// This is the *only* class that talks to Python  [cite: 188-191, 638-651].
-// All other classes will talk to this one.
+[cite_start]// This is the *only* class that talks to Python  [cite: 188-191, 638-651, 722-723].
 public class APIClient : MonoBehaviour
 {
     private string baseUrl = "http://127.0.0.1:5000";
@@ -27,7 +26,7 @@ public class APIClient : MonoBehaviour
             }
             else
             {
-                Debug.LogError("API Error: " + request.error);
+                Debug.LogError($"API Error GetCostSurface: {request.error} | {request.downloadHandler.text}");
                 return null;
             }
         }
@@ -37,8 +36,6 @@ public class APIClient : MonoBehaviour
     public async Task<StepDataResponse> CalculateNextStepAsync(StepDataRequest requestData)
     {
         string url = $"{baseUrl}/calculate_next_step";
-        
-        // Convert our C# request object into a JSON string
         string jsonRequestBody = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonRequestBody);
 
@@ -59,7 +56,7 @@ public class APIClient : MonoBehaviour
             }
             else
             {
-                Debug.LogError("API Error: " + request.error);
+                Debug.LogError($"API Error CalculateNextStep: {request.error} | {request.downloadHandler.text}");
                 return null;
             }
         }

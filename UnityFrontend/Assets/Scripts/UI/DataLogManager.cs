@@ -1,45 +1,32 @@
 using UnityEngine;
-using UnityEngine.UI; // ScrollRect için
+using UnityEngine.UI;
 
-// Bu sınıf, UI'daki log panelini yönetir
+// Manages the scrolling log panel
 public class DataLogManager : MonoBehaviour
 {
-    // --- Inspector'dan Sürükle-Bırak ---
-    
-    // 1. Proje panelinden (Assets) LogEntry prefab'ını buraya sürükle
+    // --- Drag from Inspector ---
     public LogEntry logEntryPrefab; 
-    
-    // 2. Hierarchy panelinden ScrollView'un "Content" objesini buraya sürükle
-    public RectTransform logContentArea; 
+    public RectTransform logContentArea; // The 'Content' object of a ScrollView
+    public ScrollRect logScrollRect; // The ScrollRect component itself
 
     private int currentIteration = 0;
 
-    /// <summary>
-    /// Log tablosuna yeni bir satır ekler.
-    /// Bu, SimulationManager tarafından her adımda çağrılır.
-    /// </summary>
+    // Called by SimulationManager every step
     public void AddLogEntry(StepDataResponse stepData)
     {
         currentIteration++;
-
-        // 1. Yeni bir log satırı prefab'ı yarat (Instantiate)
         LogEntry newEntry = Instantiate(logEntryPrefab, logContentArea);
-
-        // 2. İçini doldur
         newEntry.Populate(currentIteration, stepData);
 
-        // TODO:
-        // (Opsiyonel) ScrollRect'i otomatik olarak en alta kaydır
+        // (Optional) Auto-scroll to bottom
+        Canvas.ForceUpdateCanvases();
+        logScrollRect.verticalNormalizedPosition = 0f; 
     }
 
-    /// <summary>
-    /// Yeni bir simülasyon başladığında log'u temizler.
-    /// </summary>
+    // Called by UIManager when starting a new simulation
     public void ClearLog()
     {
         currentIteration = 0;
-        
-        // Content alanındaki tüm eski log satırlarını (prefab'ları) yok et
         foreach (Transform child in logContentArea)
         {
             Destroy(child.gameObject);

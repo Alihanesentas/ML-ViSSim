@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Threading.Tasks;
 
-// This class manages the *state* of the simulation (Play, Pause, Speed).
+// Manages the *state* of the simulation (Play, Pause, Speed).
 public class SimulationManager : MonoBehaviour
 {
-    // --- Links to other components (set by UIManager) ---
+    // --- Links (Set by UIManager) ---
     [HideInInspector] public APIClient apiClient;
     [HideInInspector] public PointController pointController;
     [HideInInspector] public DataLogManager dataLogManager;
@@ -12,28 +12,29 @@ public class SimulationManager : MonoBehaviour
     // --- Simulation State ---
     private bool isRunning = false;
     private float simulationSpeed = 1.0f;
-    private float[] current_w = { 10f, -5f }; // Default start point
+    private float[] current_w = { 8f, -8f }; // Default start point
     
-    // --- Config (set by UIManager) ---
-    private string model = "linear_regression";
-    private string algo = "GradientDescent";
-    private string data_id = "default_data";
-    private float lr = 0.01f;
+    // --- Config (Set by UIManager) ---
+    // These values will be updated by UIManager based on dropdowns
+    public string model { get; set; } = "linear_regression";
+    public string algorithm { get; set; } = "GradientDescent";
+    public string data_id { get; set; } = "default_data";
+    public HyperparameterData hyperparameters { get; set; } = new HyperparameterData { learning_rate = 0.1f };
 
-    // Called by UIManager's "Play" button
+    // --- Public Controls (Called by UIManager buttons) ---
+    
     public void PlaySimulation()
     {
+        if (isRunning) return; // Already playing
         isRunning = true;
-        RunSimulationLoop(); // Start the async loop
+        RunSimulationLoop();
     }
 
-    // Called by UIManager's "Pause" button
     public void PauseSimulation()
     {
         isRunning = false;
     }
 
-    // Called by UIManager's "Step" button
     public async Task StepOnce()
     {
         isRunning = false; // Pause if it was running
@@ -42,51 +43,55 @@ public class SimulationManager : MonoBehaviour
     
     public void SetSpeed(float speed)
     {
-        simulationSpeed = speed; //
+        simulationSpeed = Mathf.Max(speed, 0.1f); // Ensure speed isn't zero
+    }
+    
+    public void ResetSimulation(float[] start_w)
+    {
+        // Called by UIManager to reset the point
+        isRunning = false;
+        current_w = start_w;
+        // TODO: Tell PointController to move to start_w
     }
 
-    // The main simulation loop (runs when isRunning is true)
+    // --- Private Logic ---
+
     private async void RunSimulationLoop()
     {
         while (isRunning)
         {
             await ExecuteSingleStep();
-            
-            // Wait based on speed
-            await Task.Delay((int)(1000 / simulationSpeed)); 
+            await Task.Delay((int)(1000 / simulationSpeed));
             
             // TODO: Add stop condition (if cost is min or epoch max)
         }
     }
 
-    // The core logic for one epoch
     private async Task ExecuteSingleStep()
     {
-        // 1. Create the request
+        // 1. Create the request object
         StepDataRequest requestData = new StepDataRequest {
             model = this.model,
             data_id = this.data_id,
             current_w = this.current_w,
-            algorithm = this.algo,
-            learning_rate = this.lr
+            algorithm = this.algorithm,
+            hyperparameters = this.hyperparameters
         };
         
-
         // 2. Call the API
         StepDataResponse response = await apiClient.CalculateNextStepAsync(requestData);
 
         if (response != null)
         {
             // 3. Update the state
-            this.current_w = response.w;
+            this.current_w = response.w.ToArray(); // Convert List<float> to float[]
             
             // 4. Tell other components to update
             pointController.UpdatePointPosition(response);
-            dataLogManager.AddLogEntry(response); //
+            dataLogManager.AddLogEntry(response);
         }
         else
         {
-            // Stop simulation if API fails
             isRunning = false; 
             Debug.LogError("Simulation stopped due to API error.");
         }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq; // Used for .Select()
 
 // This class handles the "Meshing" logic.
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -8,35 +9,25 @@ public class GraphRenderer : MonoBehaviour
 
     void Awake()
     {
-        // Setup the Mesh components on this GameObject
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
+        // Assign a default material (you can change this in the Inspector)
         GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
     }
 
-    // This is called by UIManager *once* per simulation.
+    // Called by UIManager *once* per simulation.
     public void DrawSurface(SurfaceDataResponse data)
     {
         Debug.Log("Unity: Drawing 3D Mesh...");
         mesh.Clear();
 
         [cite_start]// --- Convert Python  data to Unity  data ---
-        Vector3[] unityVertices = new Vector3[data.vertices.Length];
-        for (int i = 0; i < data.vertices.Length; i++)
-        {
-            // Note: Python's (x,y,z) becomes Unity's (x,y,z)
-            // We map w0->x, cost->y, w1->z
-            unityVertices[i] = new Vector3(
-                data.vertices[i].x, 
-                data.vertices[i].y, 
-                data.vertices[i].z
-            );
-        }
+        // Efficiently convert array of structs to array of Vector3
+        Vector3[] unityVertices = data.vertices.Select(v => new Vector3(v.x, v.y, v.z)).ToArray();
         
         int[] triangles = data.triangles;
 
-        // --- Fix: Python (RHS) to Unity (LHS) ---
-        // Flip the winding order of triangles
+        // --- Fix: Python (RHS CCW) to Unity (LHS CW) ---
         for (int i = 0; i < triangles.Length; i += 3)
         {
             int temp = triangles[i + 1];
@@ -45,9 +36,9 @@ public class GraphRenderer : MonoBehaviour
         }
         // ------------------------------------
 
-        // --- Assign data to the Mesh ---
         mesh.vertices = unityVertices;
         mesh.triangles = triangles;
         mesh.RecalculateNormals(); // Auto-calculate lighting
+        mesh.RecalculateBounds(); // Helps the camera focus
     }
 }
