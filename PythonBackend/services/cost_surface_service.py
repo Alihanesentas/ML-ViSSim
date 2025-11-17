@@ -1,41 +1,45 @@
 import numpy as np
 
-# This is the "Heavy Load" service.
-# Its only job is to generate the 3D mesh data (vertices and triangles).
+# "Heavy Load" service
 class CostSurfaceService:
     
     def __init__(self, resolution=20):
-        # A 20x20 grid means 400 vertices. Keep this low for the MVP.
         self.resolution = resolution 
 
     def get_surface(self, model, data):
-        """
-        Generates the vertices and triangles for the 3D cost surface.
-        This is the "Python Zeki" (Option B) approach.
-        """
-        print(f"Python: Generating {self.resolution}x{self.resolution} cost surface ...")
+        print(f"Python: Generating {self.resolution}x{self.resolution} cost surface [cite: 170-221]...")
+        
+        # 1. Create the (w0, w1) grid
+        w0_range = np.linspace(-10, 10, self.resolution)
+        w1_range = np.linspace(-10, 10, self.resolution)
+        w0_grid, w1_grid = np.meshgrid(w0_range, w1_range)
+
+        # 2. Calculate cost for every point on the grid
+        # We use a vectorized operation for speed if the model supports it,
+        # otherwise, we loop.
+        # For our LinearRegression, we'll loop for clarity.
         
         vertices = []
-        triangles = []
+        cost_grid = np.zeros(w0_grid.shape)
+        
+        for i in range(self.resolution):
+            for j in range(self.resolution):
+                w_pair = [w0_grid[i, j], w1_grid[i, j]]
+                cost = model.calculate_cost(data, w_pair)
+                cost_grid[i, j] = cost
+                # Add (w0, cost, w1) to vertices
+                vertices.append({"x": w_pair[0], "y": cost, "z": w_pair[1]})
 
-        # TODO:
-        # 1. Create two 1D arrays (w0_range, w1_range) from -10 to +10
-        #    using np.linspace(-10, 10, self.resolution).
-        # 2. Use np.meshgrid to create 2D grids (w0_grid, w1_grid).
-        # 3. Loop through every (w0, w1) pair in the grid:
-        #    a. Calculate cost = model.calculate_cost(data, [w0, w1])
-        #    b. Append {"x": w0, "y": cost, "z": w1} to the 'vertices' list.
-        # 4. Run the *second* set of loops (like in the meshing prototype)
-        #    to calculate the 'triangles' (index) list here in Python .
-        
-        # --- MOCKUP DATA (FOR MVP STEP 1) ---
-        # This is the 4-point, 2-triangle mock data from our previous chat
-        if not vertices:
-             vertices = [
-                {"x": 0, "y": 0, "z": 0}, {"x": 1, "y": 0, "z": 0},
-                {"x": 0, "y": 0, "z": 1}, {"x": 1, "y": 1, "z": 1}
-             ]
-             triangles = [0, 2, 1,   1, 2, 3] # (Sent as CCW, will be flipped in C#)
-        # --- END MOCKUP DATA ---
-        
+        # 3. Calculate triangles (Python side)
+        triangles = []
+        for i in range(self.resolution - 1):
+            for j in range(self.resolution - 1):
+                # Get indices for the 4 corners of a quad
+                vi = (i * self.resolution) + j
+                
+                # Triangle 1
+                triangles.extend([vi, vi + self.resolution, vi + 1])
+                # Triangle 2
+                triangles.extend([vi + 1, vi + self.resolution, vi + self.resolution + 1])
+
         return {"vertices": vertices, "triangles": triangles}

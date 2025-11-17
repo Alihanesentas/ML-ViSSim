@@ -1,6 +1,7 @@
 // DTO = Data Transfer Object. These C# classes *must* match the
-[cite_start]// JSON structure coming from Python .
+// JSON structure coming from Python.
 using System;
+using System.Collections.Generic; // For Dictionaries
 
 [Serializable]
 public class VertexData
@@ -20,11 +21,11 @@ public class SurfaceDataResponse // For /get_cost_surface
 [Serializable]
 public class StepDataResponse // For /calculate_next_step
 {
-    public float[] w; // [new_w0, new_w1]
+    public List<float> w; // [new_w0, new_w1] (Python  .tolist() sends a List)
     public float cost;
 }
 
-[cite_start]// This is what we send *to* Python 
+// This is what we send *to* Python
 [Serializable]
 public class StepDataRequest
 {
@@ -32,5 +33,18 @@ public class StepDataRequest
     public string data_id;
     public float[] current_w;
     public string algorithm;
+    
+    // We need to send the hyperparameters now
+    public HyperparameterData hyperparameters;
+}
+
+// A flexible class to hold hyperparameters
+[Serializable]
+public class HyperparameterData
+{
+    // Add any hyperparam you need.
+    // Make sure the name (e.g., "learning_rate") matches
+    [cite_start]// the key used in the Python  algorithm classes.
     public float learning_rate;
+    public int resolution; // For BruteForce
 }
