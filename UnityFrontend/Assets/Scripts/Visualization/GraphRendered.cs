@@ -21,7 +21,7 @@ public class GraphRenderer : MonoBehaviour
         Debug.Log("Unity: Drawing 3D Mesh...");
         mesh.Clear();
 
-        [cite_start]// --- Convert Python  data to Unity  data ---
+        // --- Convert Python  data to Unity  data ---
         // Efficiently convert array of structs to array of Vector3
         Vector3[] unityVertices = data.vertices.Select(v => new Vector3(v.x, v.y, v.z)).ToArray();
         
