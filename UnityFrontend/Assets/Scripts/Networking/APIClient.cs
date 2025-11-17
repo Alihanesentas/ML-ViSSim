@@ -8,7 +8,7 @@ using System.Text; // For POST request
 public class APIClient : MonoBehaviour
 {
     private string baseUrl = "http://127.0.0.1:5000";
-
+    
     // "Heavy Load" call
     public async Task<SurfaceDataResponse> GetCostSurfaceAsync(string model, string data_id)
     {

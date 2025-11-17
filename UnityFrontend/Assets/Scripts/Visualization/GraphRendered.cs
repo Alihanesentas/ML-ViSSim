@@ -14,6 +14,8 @@ public class GraphRenderer : MonoBehaviour
         // Assign a default material (you can change this in the Inspector)
         GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
     }
+    
+
 
     // Called by UIManager *once* per simulation.
     public void DrawSurface(SurfaceDataResponse data)

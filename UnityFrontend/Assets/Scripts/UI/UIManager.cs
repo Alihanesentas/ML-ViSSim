@@ -26,22 +26,22 @@ public class UIManager : MonoBehaviour
     // public Button importDataButton;
     // public Button generateDataButton;
 
-    void Start()
+  void Start()
     {
         // --- Setup Dependencies ---
+        // Bunların hepsi Inspector'da dolu, harika!
         simManager.apiClient = this.apiClient;
         simManager.pointController = this.pointController;
         simManager.dataLogManager = this.dataLogManager;
 
         // --- Connect UI Buttons to Functions ---
         generateSurfaceButton.onClick.AddListener(OnGenerateSurfaceClicked);
-        playButton.onClick.AddListener(simManager.PlaySimulation);
-        pauseButton.onClick.AddListener(simManager.PauseSimulation);
-        stepButton.onClick.AddListener(() => simManager.StepOnce());
         
-        // TODO: Connect other UI elements
-        // lrSlider.onValueChanged.AddListener(OnLearningRateChanged);
-        // algorithmDropdown.onValueChanged.AddListener(OnAlgorithmChanged);
+        // -- will be updated version ---
+        
+        // playButton.onClick.AddListener(simManager.PlaySimulation);
+        // pauseButton.onClick.AddListener(simManager.PauseSimulation);
+        // stepButton.onClick.AddListener(() => simManager.StepOnce()); 
     }
 
     public async void OnGenerateSurfaceClicked()
