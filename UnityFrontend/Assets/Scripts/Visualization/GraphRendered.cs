@@ -6,13 +6,20 @@ using System.Linq; // Used for .Select()
 public class GraphRenderer : MonoBehaviour
 {
     private Mesh mesh;
-
+    public Material urpLitMaterial; // Assign in Inspector
     void Awake()
     {
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
+        if(urpLitMaterial != null){
+            GetComponent<MeshRenderer>().material = urpLitMaterial;
+        }
+        else
+        {
+            Debug.LogWarning("GraphRenderer: urpLitMeterial is not assigned in the Inspector.");
+            GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        }
         // Assign a default material (you can change this in the Inspector)
-        GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
     }
     
 
