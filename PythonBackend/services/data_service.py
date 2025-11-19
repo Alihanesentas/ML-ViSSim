@@ -1,3 +1,4 @@
+from sklearn.datasets import make_regression
 from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
 import uuid # Added for generating unique data IDs
@@ -11,21 +12,16 @@ class DataService:
         print("DataService initialized and default data loaded.")
 
     def _load_initial_data(self):
-        # This is the private loading function
-        X, y = datasets.load_diabetes(return_X_y=True)
-        
-        # We only take one feature (BMI) for our (w0, w1) MVP goal
-        X_feature = X[:, 2:3] 
-        
-        scaler_x = StandardScaler()
-        scaler_y = StandardScaler()
-        
-        X_scaled = scaler_x.fit_transform(X_feature)
-        y_scaled = scaler_y.fit_transform(y.reshape(-1, 1)).ravel()
-        
-        # This is our "data" object
-        return {"x": X_scaled, "y": y_scaled, "scalers": (scaler_x, scaler_y)}
-
+        X,y = make_regression(n_samples=3000,n_features=1,noise=100,bias=1,random_state=42)
+        X_features = X.tolist()
+        scalar_x = StandardScaler()
+        scalar_y = StandardScaler()
+        X_scaled = scalar_x.fit_transform(X_features)
+        y_scaled = scalar_y.fit_transform(y.reshape(-1,1)).ravel()
+        print(f"Data Loaded: Synthetic Regression (Noise: 40.0). Shape: {X_scaled.shape}")
+        return {"x": X_scaled.tolist(), "y": y_scaled, "scalers": (scalar_x,scalar_y)}
+    
+                
     def get_data(self, data_id):
         # This is the public method app.py will call to get data
         return self.data_store.get(data_id)

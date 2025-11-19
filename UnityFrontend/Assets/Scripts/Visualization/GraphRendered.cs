@@ -6,6 +6,7 @@ using System.Linq; // Used for .Select()
 public class GraphRenderer : MonoBehaviour
 {
     private Mesh mesh;
+    public Gradient heightGradient;
     public Material urpLitMaterial; // Assign in Inspector
     void Awake()
     {
@@ -43,10 +44,24 @@ public class GraphRenderer : MonoBehaviour
             triangles[i + 1] = triangles[i + 2];
             triangles[i + 2] = temp;
         }
+        Color[] colors = new Color[unityVertices.Length];
+        float minY = unityVertices.Min(v => v.y);
+        float maxY = unityVertices.Max(v => v.y);
+        float range = maxY - minY;
+        if(range <= 0 ) range = 1f; // Prevent division by zero
+        
+        for(int i=0;i<unityVertices.Length;i++){
+            // calculate height normalized between 0 and 1
+            float normalizedHeight = (unityVertices[i].y -minY) / range;
+            // assign color based on height (blue to red gradient)
+            colors[i] = heightGradient.Evaluate(normalizedHeight);
+        }
+
         // ------------------------------------
 
         mesh.vertices = unityVertices;
         mesh.triangles = triangles;
+        mesh.colors = colors;
         mesh.RecalculateNormals(); // Auto-calculate lighting
         mesh.RecalculateBounds(); // Helps the camera focus
     }
