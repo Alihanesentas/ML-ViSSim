@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Linq;
-using System.Collections.Generic; // Required for List
+using System.Collections.Generic;
+// using System.Numerics; // Removed to avoid ambiguity with UnityEngine.Vector2
+
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class GraphRenderer : MonoBehaviour
@@ -12,6 +14,11 @@ public class GraphRenderer : MonoBehaviour
     public float thickness = 0.5f; // Thickness amount for the mesh
 
     public Material urpLitMaterial; // Assign this in Inspector
+
+    public float gridStepSize = 1.0f; // Size of each grid cell for UV mapping
+
+    private MeshRenderer meshRenderer;
+
 
     void Awake()
     {
@@ -55,29 +62,42 @@ public class GraphRenderer : MonoBehaviour
         System.Array.Copy(topVertices, 0, allVertices, 0, topVertices.Length);
         System.Array.Copy(bottomVertices, 0, allVertices, topVertices.Length, bottomVertices.Length);
 
-        // --- Calculate Vertex Colors (Heatmap) ---
+        // --- Calculate Vertex Colors (Heatmap)-(Grid) ---
         Color[] colors = new Color[allVertices.Length];
+        Vector2[] uvs = new Vector2[allVertices.Length];
+
         
         // Find min/max height (y) to normalize values
         float minY = topVertices.Min(v => v.y);
         float maxY = topVertices.Max(v => v.y);
-        float range = maxY - minY;
-        
-        // Prevent division by zero
-        if (range <= 0) range = 1f;
+        float rangeY = maxY - minY;
 
-        for(int i = 0; i < topVertices.Length; i++)
-        {
-            // Normalize height between 0 and 1
-            float normalizedHeight = (topVertices[i].y - minY) / range;
-            
-            // Pick color from Gradient based on height
+        if (rangeY <= 0) rangeY = 1f;
+        // find to grid extents in x and z for UV mapping
+        float minX = topVertices.Min(v => v.x);
+        float maxX = topVertices.Max(v => v.x);
+        float rangeX = maxX - minX;
+        
+
+        float minZ = topVertices.Min(v => v.z);
+        float maxZ = topVertices.Max(v => v.z);
+        float rangeZ = maxZ - minZ;
+        for (int i = 0; i<topVertices.Length;i++){
+            // Color Mapping based on Height
+            float normalizedHeight = (topVertices[i].y - minY) / rangeY;
             Color c = heightGradient.Evaluate(normalizedHeight);
-            
-            // Assign the same color to both the top and corresponding bottom vertex
-            colors[i] = c; 
-            colors[i + topVertices.Length] = c;
+            colors[i] = c;
+            colors[i+topVertices.Length] = c;
+
+            // UV Mapping based on X and Z positions arange(0,1)
+            float u = (topVertices[i].x - minX) / rangeX;
+            float v = (topVertices[i].z- minZ) / rangeZ;
+            Vector2 uv = new Vector2(u,v);
+            uvs[i] = uv;
+            uvs[i + topVertices.Length] = uv;
+
         }
+        
 
         // --- Calculate Triangles ---
         int[] originalTriangles = data.triangles;
@@ -110,8 +130,22 @@ public class GraphRenderer : MonoBehaviour
         mesh.vertices = allVertices;
         mesh.triangles = allTriangles.ToArray();
         mesh.colors = colors;
+        mesh.uv = uvs;
         
         mesh.RecalculateNormals(); // Important for lighting
         mesh.RecalculateBounds();  // Important for camera culling
+    if (gridStepSize > 0 ){
+        // Set tiling for grid effect
+        float tileX = rangeX / gridStepSize;
+        float tileY = rangeY / gridStepSize;
+        // change property tilling 
+        // _BaseMap_ST is the internal name for the main texture's tiling and offset
+        meshRenderer.material.mainTextureScale = new Vector2(tileX,tileY);
+        if (meshRenderer.material.HasProperty("_Tiling")){
+            meshRenderer.material.SetVector("_Tiling", new Vector4(tileX, tileY, 0, 0));
+        }
+
+
+    }
     }
 }
