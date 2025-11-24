@@ -71,6 +71,7 @@ public class GraphRenderer : MonoBehaviour
         float minY = topVertices.Min(v => v.y);
         float maxY = topVertices.Max(v => v.y);
         float rangeY = maxY - minY;
+        
 
         if (rangeY <= 0) rangeY = 1f;
         // find to grid extents in x and z for UV mapping
