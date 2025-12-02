@@ -4,35 +4,43 @@ using System.Collections.Generic;
 
 public class SimulationManager : MonoBehaviour
 {
-    // --- Dependencies (Assigned by UIManager) ---
-    [HideInInspector] public APIClient apiClient;
-    [HideInInspector] public PointController pointController;
-    [HideInInspector] public DataLogManager dataLogManager;
+    // --- Dependencies ---
+    [Header("Dependencies")]
+    // [HideInInspector] removed so you can DEBUG by dragging them manually if needed
+    public APIClient apiClient;
+    public PointController pointController; 
+    public DataLogManager dataLogManager;
 
     // --- Simulation State ---
     private bool isRunning = false;
-    private float simulationSpeed = 2.0f; // Default speed multiplier
+    private float simulationSpeed = 2.0f; 
     
-    // Current position [w0, w1]
     private float[] current_w = { 0f, 0f }; 
-    private float currentCost = float.MaxValue; // Track cost for convergence check
+    private float currentCost = float.MaxValue; 
 
-    // --- Configuration (Updated by UIManager) ---
+    // --- Configuration ---
     public string model { get; set; } = "linear_regression";
     public string algorithm { get; set; } = "GradientDescent";
     public string data_id { get; set; } = "default_data";
     
-    // Learning Rate
     public HyperparameterData hyperparameters { get; set; } = new HyperparameterData { learning_rate = 0.1f };
 
-    // --- Boundaries & Stopping Criteria ---
-    // Must match the Python grid range (-10 to 10)
     private float boundMin = -10f;
     private float boundMax = 10f;
-    // Stop if cost change is smaller than this
     private float stopThreshold = 0.0001f; 
 
-    // --- Public Controls (Called by UIManager Buttons) ---
+    void Start()
+    {
+        // Auto-find references if missing (Fail-safe)
+        if (pointController == null) 
+            pointController = FindObjectOfType<PointController>();
+            
+        if (apiClient == null)
+            apiClient = GetComponent<APIClient>();
+            
+        if (dataLogManager == null)
+            dataLogManager = GetComponent<DataLogManager>();
+    }
 
     public void PlaySimulation()
     {
@@ -48,10 +56,12 @@ public class SimulationManager : MonoBehaviour
         Debug.Log("Simulation: Paused.");
     }
 
-    // Step Button calls this function
     public async Task StepOnce()
     {
+        // Force stop continuous run if stepping manually
         if (isRunning) isRunning = false; 
+        
+        Debug.Log("Simulation: Manual Step Triggered...");
         await ExecuteSingleStep();
     }
     
@@ -60,33 +70,24 @@ public class SimulationManager : MonoBehaviour
         simulationSpeed = Mathf.Max(speed, 0.1f);
     }
 
-    // --- CRITICAL UPDATE: Random Start Point ---
+    // --- RANDOM START POINT LOGIC ---
     public void MoveToRandomStartPoint()
     {
-        // We want to start from the middle/slopes of the mesh, but not at the very bottom.
-        // Our grid is between -10 and 10.
-        // The exact center (0,0) is usually close to the lowest point (since data is normalized).
-        // Therefore, let's start near the edges so we can watch the descent.
-        
-        // Select a spot between -8 and -4 OR between 4 and 8.
-        // This ensures we start on the "slope".
-        
+        // Start on the slopes (between 4 and 8, or -8 and -4)
         float w0 = (Random.value > 0.5f) ? Random.Range(4f, 8f) : Random.Range(-8f, -4f);
         float w1 = (Random.value > 0.5f) ? Random.Range(4f, 8f) : Random.Range(-8f, -4f);
 
         current_w = new float[] { w0, w1 };
         currentCost = float.MaxValue; 
 
-        Debug.Log($"Simulation: New Start Point: [{w0}, {w1}]");
+        Debug.Log($"Simulation: New Start Point Set: [{w0}, {w1}]");
 
-        // We ask Python "What is the cost (height) here?" to visually teleport the ball.
+        // Ask Python for the cost height to teleport visual
         _ = ProbeInitialHeight(); 
     }
 
-    // "Dummy Step" used only to learn the height and teleport the ball
     private async Task ProbeInitialHeight()
     {
-        // We send Learning Rate 0 so w0, w1 don't change, only Cost is calculated.
         var probeParams = new HyperparameterData { learning_rate = 0.0f }; 
         
         StepDataRequest request = new StepDataRequest {
@@ -99,9 +100,17 @@ public class SimulationManager : MonoBehaviour
             StepDataResponse response = await apiClient.CalculateNextStepAsync(request);
             if (response != null && pointController != null)
             {
-                // Teleport the ball directly
+                Debug.Log($"Simulation: Teleporting point to start: {response.w[0]}, {response.cost}, {response.w[1]}");
                 pointController.TeleportTo(response.w[0], response.cost, response.w[1]);
             }
+            else
+            {
+                Debug.LogError("Simulation: Probe failed. API or PointController is null.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Simulation: API Client is NULL!");
         }
     }
 
@@ -115,12 +124,9 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
-    // --- REAL STEP LOGIC ---
     private async Task ExecuteSingleStep()
     {
         // 1. Prepare Request
-        // At this point, the Python backend takes the current w0, w1 and learning_rate
-        // and applies the Gradient Descent formula (w_new = w_old - lr * gradient).
         StepDataRequest requestData = new StepDataRequest {
             model = this.model,
             data_id = this.data_id,
@@ -136,7 +142,7 @@ public class SimulationManager : MonoBehaviour
 
             if (response != null)
             {
-                // Convergence Check (Stop if change is very small)
+                // Convergence Check
                 float costDiff = Mathf.Abs(currentCost - response.cost);
                 if (costDiff < stopThreshold)
                 {
@@ -144,7 +150,7 @@ public class SimulationManager : MonoBehaviour
                     isRunning = false;
                 }
 
-                // Boundary Check (Don't hit the walls)
+                // Boundary Check
                 if (response.w[0] < boundMin || response.w[0] > boundMax || 
                     response.w[1] < boundMin || response.w[1] > boundMax)
                 {
@@ -153,21 +159,33 @@ public class SimulationManager : MonoBehaviour
                 }
 
                 // 3. Update Internal Data
-                this.current_w = response.w.ToArray(); // New w0, w1
-                this.currentCost = response.cost;      // New Cost
+                this.current_w = response.w.ToArray();
+                this.currentCost = response.cost;      
                 
-                // 4. Update Visuals (Move the Ball)
+                // 4. Update Visuals
                 if (pointController != null)
+                {
+                    Debug.Log($"Simulation: Moving to [{response.w[0]}, {response.cost}, {response.w[1]}]");
                     pointController.UpdatePointPosition(response);
+                }
+                else
+                {
+                    Debug.LogError("Simulation: PointController is missing!");
+                }
                 
-                // 5. Write to Log Screen
+                // 5. Write to Log
                 if (dataLogManager != null)
                     dataLogManager.AddLogEntry(response);
             }
             else
             {
+                Debug.LogError("Simulation: API Response was NULL");
                 isRunning = false;
             }
+        }
+        else
+        {
+            Debug.LogError("Simulation: API Client not assigned.");
         }
     }
 }

@@ -12,7 +12,7 @@ class DataService:
         print("DataService initialized and default data loaded.")
 
     def _load_initial_data(self):
-        X,y = make_regression(n_samples=3000,n_features=1,noise=100,bias=1,random_state=42)
+        X,y = make_regression(n_samples=3000,n_features=1,noise=40,bias=1,random_state=42)
         X_features = X.tolist()
         scalar_x = StandardScaler()
         scalar_y = StandardScaler()

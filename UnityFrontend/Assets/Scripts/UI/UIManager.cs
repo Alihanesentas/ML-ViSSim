@@ -1,85 +1,85 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // For TMP_Dropdown
+using TMPro; 
 
-// The "Orchestra Conductor". Connects UI to logic.
 public class UIManager : MonoBehaviour
 {
-    [Header("Component Links (Drag from Hierarchy)")]
-    public APIClient apiClient;
-    public GraphRenderer graphRenderer;
-    public PointController pointController;
-    public DataLogManager dataLogManager;
-    public SimulationManager simManager;
+    [Header("Core Dependencies")]
+    // Drag _SYSTEM_MANAGERS here
+    public SimulationManager simManager; 
 
-    [Header("UI Elements (Drag from Hierarchy)")]
+    [Header("UI Elements")]
+    // Drag your UI Buttons here
     public Button generateSurfaceButton;
     public Button playButton;
     public Button pauseButton;
     public Button stepButton;
     
-    // --- TODO: Add these UI elements ---
-    // public TMP_Dropdown modelDropdown;
-    // public TMP_Dropdown algorithmDropdown;
-    // public Slider lrSlider;
-    // public Slider speedSlider;
-    // public Button importDataButton;
-    // public Button generateDataButton;
+    // public TMP_Dropdown modelDropdown; // Future TODO
+    // public Button importDataButton;    // Future TODO
 
-  void Start()
+    void Start()
     {
-        // --- Setup Dependencies ---
-        // Bunların hepsi Inspector'da dolu, harika!
-        simManager.apiClient = this.apiClient;
-        simManager.pointController = this.pointController;
-        simManager.dataLogManager = this.dataLogManager;
+        // 1. AUTO-FIND Dependencies (Backup Plan)
+        if (simManager == null)
+        {
+            simManager = FindObjectOfType<SimulationManager>();
+            if (simManager == null) Debug.LogError("UIManager: Critical! SimulationManager not found in scene.");
+        }
 
-        // --- Connect UI Buttons to Functions ---
-        generateSurfaceButton.onClick.AddListener(OnGenerateSurfaceClicked);
+        // 2. CONNECT BUTTONS
+        // We use checks to prevent null reference errors if a button isn't assigned yet.
         
-        // -- will be updated version ---
-        
-        // playButton.onClick.AddListener(simManager.PlaySimulation);
-        // pauseButton.onClick.AddListener(simManager.PauseSimulation);
-        // stepButton.onClick.AddListener(() => simManager.StepOnce()); 
+        if (generateSurfaceButton != null)
+            generateSurfaceButton.onClick.AddListener(OnGenerateSurfaceClicked);
+
+        if (playButton != null)
+            playButton.onClick.AddListener(() => simManager.PlaySimulation());
+
+        if (pauseButton != null)
+            pauseButton.onClick.AddListener(() => simManager.PauseSimulation());
+
+        if (stepButton != null)
+        {
+            // The lambda wrapper { } ensures we fire the async method correctly
+            stepButton.onClick.AddListener(() => { _ = simManager.StepOnce(); });
+        }
+        else
+        {
+            Debug.LogError("UIManager: Step Button is NOT assigned in Inspector!");
+        }
     }
 
     public async void OnGenerateSurfaceClicked()
     {
-        // TODO: Get selected model and data from UI dropdowns
-        string selectedModel = "linear_regression"; // (Get from modelDropdown)
-        string selectedData = "default_data";       // (Get from dataDropdown)
+        if (simManager == null) return;
+
+        // Hardcoded defaults for now
+        string selectedModel = "linear_regression"; 
+        string selectedData = "default_data";       
         
-        // Tell SimManager the config
+        // 1. Configure Simulation
         simManager.model = selectedModel;
         simManager.data_id = selectedData;
         
-        // Clear old logs
-        dataLogManager.ClearLog();
+        // 2. Reset Log
+        if (simManager.dataLogManager != null) 
+            simManager.dataLogManager.ClearLog();
 
-        // 1. Call the "Heavy Load" API
-        SurfaceDataResponse surfaceData = await apiClient.GetCostSurfaceAsync(selectedModel, selectedData);
-
-        // 2. Tell the GraphRenderer to draw the mesh
-        if (surfaceData != null)
+        // 3. Fetch & Draw
+        if (simManager.apiClient != null)
         {
-            graphRenderer.DrawSurface(surfaceData);
+            SurfaceDataResponse surfaceData = await simManager.apiClient.GetCostSurfaceAsync(selectedModel, selectedData);
+
+            if (surfaceData != null)
+            {
+                // Find renderer dynamically if not linked
+                var renderer = FindObjectOfType<GraphRenderer>();
+                if (renderer != null) renderer.DrawSurface(surfaceData);
+                
+                // Reset Ball Position
+                simManager.MoveToRandomStartPoint();
+            }
         }
     }
-    
-    public void OnLearningRateChanged(float value)
-    {
-        // Read value from LR slider and update the SimManager's config
-        simManager.hyperparameters.learning_rate = value;
-    }
-    
-    public void OnAlgorithmChanged(int index)
-    {
-        // Read value from Algorithm dropdown
-        // string selectedAlgo = algorithmDropdown.options[index].text;
-        // simManager.algorithm = selectedAlgo;
-    }
-    
-    // TODO: Add OnImportDataClicked()
-    // TODO: Add OnGenerateDataClicked()
 }
