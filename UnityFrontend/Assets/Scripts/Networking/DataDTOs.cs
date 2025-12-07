@@ -21,7 +21,7 @@ public class SurfaceDataResponse // For /get_cost_surface
 [Serializable]
 public class StepDataResponse // For /calculate_next_step
 {
-    public List<float> w; // [new_w0, new_w1] (Python  .tolist() sends a List)
+    public List<float> w; // [new_w0, new_w1] (Python .tolist() sends a List)
     public float cost;
 }
 
@@ -44,7 +44,7 @@ public class HyperparameterData
 {
     // Add any hyperparam you need.
     // Make sure the name (e.g., "learning_rate") matches
-    [cite_start]// the key used in the Python  algorithm classes.
+    // the key used in the Python algorithm classes.
     public float learning_rate;
     public int resolution; // For BruteForce
 }

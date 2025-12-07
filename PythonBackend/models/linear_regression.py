@@ -6,8 +6,8 @@ class LinearRegression(BaseModel):
     
     def calculate_cost(self, data, w):
         # This implementation is based on our discussion
-        x = data["x"].ravel() # 1D (N,) array
-        y = data["y"]         # 1D (N,) array
+        x = np.array(data["x"]).ravel()
+        y = np.array(data["y"]).ravel()
         n_samples = len(y)
         
         # y_pred = w0 + w1*x
@@ -19,8 +19,8 @@ class LinearRegression(BaseModel):
 
     def calculate_gradient_at_point(self, data, w):
         # This implementation is based on our discussion
-        x = data["x"].ravel()
-        y = data["y"]
+        x = np.array(data["x"]).ravel()
+        y = np.array(data["y"]).ravel()
         n_samples = len(y)
         
         # y_pred = w0 + w1*x

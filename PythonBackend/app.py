@@ -19,6 +19,7 @@ algorithms_repo = {
     "GradientDescent": GradientDescent,
     "BruteForce": BruteForce
 }
+
 # --------------------------------------
 
 @app.route("/get_cost_surface")

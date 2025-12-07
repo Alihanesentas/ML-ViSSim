@@ -1,7 +1,7 @@
 # This is the "contract" or abstract class.
 # All models (LinearRegression, PolynomialRegression, etc.) MUST implement this.
 from abc import ABC, abstractmethod
-
+import numpy as np
 class BaseModel(ABC):
     
     @abstractmethod
@@ -11,7 +11,6 @@ class BaseModel(ABC):
         This is a "stateless" method, used by the CostSurfaceService.
         """
         pass
-
     @abstractmethod
     def calculate_gradient_at_point(self, data, w):
         """
