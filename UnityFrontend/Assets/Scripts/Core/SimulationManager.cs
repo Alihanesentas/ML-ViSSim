@@ -25,8 +25,8 @@ public class SimulationManager : MonoBehaviour
     
     public HyperparameterData hyperparameters { get; set; } = new HyperparameterData { learning_rate = 0.1f };
 
-    private float boundMin = -10f;
-    private float boundMax = 10f;
+    private float boundMin = -20f;
+    private float boundMax = 20f;
     private float stopThreshold = 0.0001f; 
 
     void Start()

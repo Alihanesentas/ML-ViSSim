@@ -1,12 +1,20 @@
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 
 public class PointController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float smoothSpeed = 5.0f; // Higher = faster smoothing
     
-    private Vector3 targetPosition;
+    public GraphRenderer graphRenderer;
     private MeshRenderer meshRenderer;
+    public float raycastOffset = 100.0f; // height of raycast origin above the graph
+
+    public float smoothSpeed = 2.0f; // Higher = faster smoothing
+    private Vector3 targetPosition;
+    private Vector3 currentXZ;
+
 
     void Awake()
     {
@@ -21,13 +29,30 @@ public class PointController : MonoBehaviour
             meshRenderer.enabled = false;
             
         targetPosition = transform.position;
+        currentXZ = transform.position;
     }
 
     void Update()
     {
-        // Smoothly move the point towards the target position every frame.
-        // This creates a nice sliding animation between steps.
-        transform.position = Vector3.Lerp(transform.position, targetPosition, smoothSpeed * Time.deltaTime);
+        // horizontal position movement only (XZ plane)
+        // just XZ entrerpolition
+        Vector3 targetXZ = new Vector3(targetPosition.x,0,targetPosition.z);
+        Vector3 newXZ = Vector3.Lerp(new Vector3(currentXZ.x,0,currentXZ.z), targetXZ, smoothSpeed * Time.deltaTime);
+        currentXZ  = newXZ;
+
+        // vertical position movement find to floor(Y)
+        Vector3 rayOrigin = new Vector3(currentXZ.x, raycastOffset, currentXZ.z);
+        RaycastHit hit;
+        //layermask not use, collide to meshcollider
+        if(Physics.Raycast(rayOrigin, Vector3.down, out hit, Mathf.Infinity)){
+            transform.position = hit.point + Vector3.up * 0.2f; // slight offset above the surface
+        }
+        else{
+            // if we did not found the floor, go to height
+            float newY = Mathf.Lerp(transform.position.y,targetPosition.y,smoothSpeed * Time.deltaTime);
+            transform.position = new Vector3(currentXZ.x,newY,currentXZ.z);
+        }
+
     }
 
     // Called by SimulationManager every epoch/step
@@ -38,8 +63,10 @@ public class PointController : MonoBehaviour
         float w1 = stepData.w[1];
         float cost = stepData.cost;
         
+        float multiplier = (graphRenderer != null) ? graphRenderer.heightScale : 1.0f;
+
         // 2. Set Target (No Scaling applied, as requested)
-        targetPosition = new Vector3(w0, cost, w1);
+        targetPosition = new Vector3(w0, cost*multiplier, w1);
     }
     
     // Called by SimulationManager at the START to snap the point instantly
@@ -48,8 +75,10 @@ public class PointController : MonoBehaviour
         // Enable the mesh now that we have valid data
         if (meshRenderer != null) 
             meshRenderer.enabled = true;
+        
+        float multiplier = (graphRenderer != null) ? graphRenderer.heightScale : 1.0f;
 
-        Vector3 pos = new Vector3(w0, cost, w1);
+        Vector3 pos = new Vector3(w0, cost * multiplier, w1);
         
         // Apply instantly to both Transform and Target to prevent smoothing/sliding
         transform.position = pos;
